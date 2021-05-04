@@ -1,5 +1,5 @@
 require('dotenv').config();
-require('./mongo');
+// require('./mongo');
 
 const express = require('express');
 const cors = require('cors');
