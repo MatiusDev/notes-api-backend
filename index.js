@@ -1,9 +1,13 @@
 require('dotenv').config();
-// require('./mongo');
+require('./mongo');
 
 const express = require('express');
 const cors = require('cors');
-// const Note = require('./models/Note');
+//Middlewares
+const handleError = require('./middlewares/handleError');
+const notFound = require('./middlewares/notFound');
+//Models
+const Note = require('./models/Note');
 
 const { json } = express;
 
@@ -12,47 +16,69 @@ const app = express();
 app.use(json());
 app.use(cors());
 
-const NOTES = [
-  {
-    id: 1,
-    content: 'HTML is easy',
-    date: '2019-05-30T17:30:31.098Z',
-    important: true
-  },
-  {
-    id: 2,
-    content: 'Browser can execute only JavaScript',
-    date: '2019-05-30T18:39:34.091Z',
-    important: false
-  },
-  {
-    id: 3,
-    content: 'GET and POST are the most important methods of HTTP protocol',
-    date: '2019-05-30T19:20:14.298Z',
-    important: true
-  }
-];
-
 app.get('/', (req, res) => {
-  res.send('<h1>Hello world</h1>');
+  res.send('<h1>Notes API! <small>by TheMatius</small></h1>');
 });
 
-// app.get('/api/notes', (req, res) => {
-//   const notes = new Note();
-//   res.json(notes);
-// });
-
-app.get('/api/notes', (req, res) => {
-  res.json(NOTES);
+app.get('/api/notes', (req, res, next) => {
+  Note.find({})
+    .then(notes => res.json(notes))
+    .catch(next);
 });
 
-app.get('/api/notes/:id', (req, res) => {
-  const id = +req.params.id;
-  const note = NOTES.find(note => note.id === id);
-  res.json(note);
+app.get('/api/notes/:id', (req, res, next) => {
+  const { id } = req.params;
+  
+  Note.findById(id).then(note => {
+    if (!note) {
+      return res.status(404).end();
+    }
+    res.json(note);
+  }).catch(next);
 });
+
+app.post('/api/notes', (req, res, next) => {
+  const note = req.body;
+
+  if (!note.content) {
+    return res.status(400).json({
+      err: 'No se ha recibido el contenido de la nota.'
+    });
+  }
+
+  const newNote = new Note({
+    content: note.content,
+    date: new Date(),
+    important: note.important || false
+  });
+  
+  newNote.save()
+    .then(savedNote => res.json(savedNote))
+    .catch(next);
+});
+
+app.put('/api/notes/:id', (req, res, next) => {
+  const { id } = req.params;
+  const { content, important } = req.body;
+
+  Note.findByIdAndUpdate(id, { content, important }, { new: true })
+    .then(updatedNote => res.json(updatedNote))
+    .catch(next);
+});
+
+app.delete('/api/notes/:id', (req, res, next) => {
+  const { id } = req.params;
+  Note.findByIdAndDelete(id)
+    .then(() => res.status(204).end())
+    .catch(next);
+});
+
+app.use(notFound);
+app.use(handleError);
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = { app, server };
