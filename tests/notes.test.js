@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
-const { server } = require('../index');
 const Note = require('../models/Note');
-const { api, initialNotes } = require('./helpers');
+
+const { api, server, initialNotes } = require('./helpers');
 
 
 describe('Notes testing', () => {
@@ -61,7 +61,7 @@ describe('Notes testing', () => {
     const response = await api
       .post('/api/notes')
       .send(newNote)
-      .expect(200)
+      .expect(201)
       .expect('Content-Type', /application\/json/);
 
     expect(response.body.id).toBeDefined();
@@ -100,7 +100,6 @@ describe('Notes testing', () => {
     expect(responseUpdate.body.important).toBe(newNote.important);
   });
   
-
   test('Should return status code 204 if a note can be deleted.', async () => {
     let response = await api.get('/api/notes');
     const firstNote = response.body[0];

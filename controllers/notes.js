@@ -1,12 +1,18 @@
 const { Router } = require('express');
 
 const Note = require('../models/Note');
+const User = require('../models/User');
 
 const notesRouter = Router();
 
 notesRouter.get('/', async (req, res, next) => {
   try {
-    const notes = await Note.find({});
+    const notes = await Note
+      .find({})
+      .populate('user', {
+        username: 1,
+        name: 1
+      });
     res.json(notes);
   } catch (err) {
     next(err);
@@ -30,23 +36,33 @@ notesRouter.get('/:id', async (req, res, next) => {
 });
   
 notesRouter.post('/', async (req, res, next) => {
-  const note = req.body;
+  const { 
+    content, 
+    important = false,
+    userId 
+  } = req.body;
   
   try {
-    if (!note.content) {
+    const user = await User.findById(userId);
+
+    if (!content) {
       return res.status(400).json({
         err: 'No se ha recibido el contenido de la nota.'
       });
     }
-    
+    //Se usa user._id y no user.id porque aun no ha pasado por el toJSON: user.toJSON().id
     const newNote = new Note({
-      content: note.content,
+      content,
       date: new Date(),
-      important: note.important || false
+      important: important,
+      user: user._id
     });
     
     const savedNote = await newNote.save();
-    res.json(savedNote);
+
+    user.notes = [...user.notes, savedNote._id];
+    await user.save();
+    res.status(201).json(savedNote);
   } catch (err) {
     next(err);
   }
