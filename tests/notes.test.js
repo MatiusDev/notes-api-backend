@@ -21,29 +21,35 @@ describe('Notes testing', () => {
     server.close();
   });
 
-  test('should return a response as a JSON.', async () => {
+  test('Should return a response as a JSON.', async () => {
     await api
       .get('/api/notes')
       .expect(200)
       .expect('Content-Type', /application\/json/);
   });
 
-  test('should return two notes.', async () => {
+  test('Should return the length of initialNotes.', async () => {
     const response = await api.get('/api/notes');
     expect(response.body).toHaveLength(initialNotes.length);
   });
   
-  test('Should return all notes and contain the content of array item.', async () => {
+  test('Should return all notes and contain the content of one item.', async () => {
     const response = await api.get('/api/notes');
     const contents = response.body.map(note => note.content);
     expect(contents).toContain(initialNotes[0].content);
   });
 
-  test('Should return a specific note by id', async () => {
+  test('Should return a specific note by id.', async () => {
     const response = await api.get('/api/notes');
     const firstNote = response.body[0];
     const reponseByID = await api.get(`/api/notes/${firstNote.id}`);
     expect(reponseByID.body.content).toBe(firstNote.content);
+  });
+
+  test('Should return error 400 for invalid id on getByID', async () => {
+    await api
+      .get('/api/notes/1234')
+      .expect(400);
   });
 
   test('Should add a valid note', async () => {
@@ -56,11 +62,10 @@ describe('Notes testing', () => {
       .post('/api/notes')
       .send(newNote)
       .expect(200)
-      .expect('Content-Type', /application\/json/)
-      .expect(res => {
-        expect(res.body.id).toBeDefined();
-      });
-    
+      .expect('Content-Type', /application\/json/);
+
+    expect(response.body.id).toBeDefined();
+
     const responseByID = await api.get(`/api/notes/${response.body.id}`);
     expect(responseByID.body.content).toBe(response.body.content);
   });
@@ -70,13 +75,33 @@ describe('Notes testing', () => {
       important: true
     };
   
-    await api
+    const response = await api
       .post('/api/notes')
       .send(newNote)
       .expect(400);
+    
+    expect(response.body.err).toBe('No se ha recibido el contenido de la nota.');
   });
 
-  test('should return status code 204 if a note can be deleted.', async () => {
+  test('Should update a note sucessfully', async () => {
+    const response = await api.get('/api/notes');
+    const firstNote = response.body[0];
+    const newNote = {
+      content: 'Cambiando contenido de nota en tests.',
+      important: false
+    };
+
+    const responseUpdate = await api
+      .put(`/api/notes/${firstNote.id}`)
+      .send(newNote)
+      .expect(200);
+    
+    expect(responseUpdate.body.content).toBe(newNote.content);
+    expect(responseUpdate.body.important).toBe(newNote.important);
+  });
+  
+
+  test('Should return status code 204 if a note can be deleted.', async () => {
     let response = await api.get('/api/notes');
     const firstNote = response.body[0];
 
@@ -88,7 +113,7 @@ describe('Notes testing', () => {
     expect(response.body).toHaveLength(initialNotes.length - 1);
   });
 
-  test('should return status code 400 if a note does not exist in DB.', async () => {
+  test('Should return status code 400 if a note does not exist in DB.', async () => {
     await api
       .delete('/api/notes/12345')
       .expect(400);
