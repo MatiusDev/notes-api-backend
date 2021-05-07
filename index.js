@@ -7,23 +7,26 @@ const cors = require('cors');
 const handleError = require('./middlewares/handleError');
 const notFound = require('./middlewares/notFound');
 //Controllers
-const notesRouter = require('./controllers/notes');
-const usersRouter = require('./controllers/users');
+const loginRouter = require('./routes/login');
+const usersRouter = require('./routes/users');
+const notesRouter = require('./routes/notes');
 
 const { json } = express;
 
 const app = express();
 // Body-parser necesario para recibir argumentos en el body del POST
+//Start Middlewares
 app.use(json());
 app.use(cors());
 
 app.get('/', (req, res) => {
   res.send('<h1>Notes API! <small>by TheMatius</small></h1>');
 });
-
-app.use('/api/notes', notesRouter);
+//Routes
+app.use('/api/login', loginRouter);
 app.use('/api/users', usersRouter);
-
+app.use('/api/notes', notesRouter);
+//End Middlewares
 app.use(notFound);
 app.use(handleError);
 

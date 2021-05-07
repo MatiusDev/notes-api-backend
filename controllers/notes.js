@@ -1,11 +1,7 @@
-const { Router } = require('express');
-
 const Note = require('../models/Note');
 const User = require('../models/User');
 
-const notesRouter = Router();
-
-notesRouter.get('/', async (req, res, next) => {
+const getAll = async (req, res, next) => {
   try {
     const notes = await Note
       .find({})
@@ -17,9 +13,9 @@ notesRouter.get('/', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-  
-notesRouter.get('/:id', async (req, res, next) => {
+};
+
+const getById = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -33,29 +29,26 @@ notesRouter.get('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-  
-notesRouter.post('/', async (req, res, next) => {
-  const { 
-    content, 
-    important = false,
-    userId 
-  } = req.body;
+};
+
+const create = async (req, res, next) => {
+  const { content, important = false } = req.body;
+  const { id: userId } = req.user;
   
   try {
-    const user = await User.findById(userId);
-
     if (!content) {
       return res.status(400).json({
         err: 'No se ha recibido el contenido de la nota.'
       });
     }
+
+    const user = await User.findById(userId);
     //Se usa user._id y no user.id porque aun no ha pasado por el toJSON: user.toJSON().id
     const newNote = new Note({
       content,
       date: new Date(),
       important: important,
-      user: user._id
+      user: userId
     });
     
     const savedNote = await newNote.save();
@@ -66,9 +59,9 @@ notesRouter.post('/', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-  
-notesRouter.put('/:id', async (req, res, next) => {
+};
+
+const update = async (req, res, next) => {
   const { id } = req.params;
   const { content, important } = req.body;
   
@@ -78,9 +71,9 @@ notesRouter.put('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-  
-notesRouter.delete('/:id', async (req, res, next) => {
+};
+
+const remove = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -89,6 +82,12 @@ notesRouter.delete('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+};
 
-module.exports = notesRouter;
+module.exports = { 
+  getAll,
+  getById,
+  create,
+  update,
+  remove
+};
