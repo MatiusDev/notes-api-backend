@@ -73,7 +73,7 @@ const update = async (req, res, next) => {
   }
 };
 
-const remove = async (req, res, next) => {
+const remove = async (req, res, next)   => {
   const { id } = req.params;
 
   try {
