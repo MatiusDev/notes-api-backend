@@ -14,7 +14,7 @@ const notesRouter = require('./routes/notes');
 const { json } = express;
 
 const app = express();
-// Body-parser necesario para recibir argumentos en el body del POST
+
 //Start Middlewares
 app.use(json());
 app.use(cors());
